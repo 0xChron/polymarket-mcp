@@ -1,5 +1,8 @@
 run:
-	uv run src/polymarket_mcp/server.py
+	uv run --frozen polymarket-mcp
+
+test:
+	uv run --frozen pytest
 
 inspector:
 	npx -y @modelcontextprotocol/inspector

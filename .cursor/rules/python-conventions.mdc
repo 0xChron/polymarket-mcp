@@ -1,0 +1,44 @@
+---
+description: Python coding standards for polymarket-mcp
+globs: src/**/*.py
+alwaysApply: false
+---
+
+# Python Conventions
+
+## Required
+
+- Type hints on all functions and tool parameters (`str | None`, `list[dict]`, `Literal` for enums)
+- All I/O is `async`; use `asyncio.gather` for parallel API calls
+- Use `uv` for dependencies — never `pip` directly
+
+## Imports
+
+Match package import style:
+
+```python
+from polymarket_mcp.config import Settings
+from polymarket_mcp.utils.helpers import err, get, text
+from polymarket_mcp.utils.formatters import format_search_markets
+```
+
+## Naming
+
+- Functions/tools: `snake_case` (`get_user_positions`)
+- Types: `PascalCase` (`Settings`, `Category`)
+- MCP tool name matches function name
+
+## HTTP Params
+
+Filter `None` values before API calls — do not send null query params:
+
+```python
+params = {"q": query, "events_status": "active" if active_only else None}
+data = await get(url, params=params)  # helpers filters None
+```
+
+## Scope
+
+- Keep changes minimal and focused
+- Match surrounding code style; no over-abstraction
+- Add comments only for non-obvious business logic

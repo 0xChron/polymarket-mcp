@@ -5,11 +5,9 @@ WORKDIR /app
 COPY pyproject.toml uv.lock /app/
 COPY src/ /app/src/
 
-ENV PYTHONPATH="/app/src"
-
 RUN pip install uv
-RUN uv sync
+RUN uv sync --frozen
 
 EXPOSE 8000
 
-CMD ["uv", "run", "src/polymarket_mcp/server.py"]
+CMD ["uv", "run", "--frozen", "polymarket-mcp"]

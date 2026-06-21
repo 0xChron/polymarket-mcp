@@ -1,0 +1,49 @@
+---
+description: Patterns for adding and modifying MCP tools
+globs: src/polymarket_mcp/server.py,src/polymarket_mcp/utils/formatters.py
+alwaysApply: false
+---
+
+# MCP Tool Patterns
+
+## Adding a Tool
+
+1. **Formatter** in `utils/formatters.py` — pure function, no I/O, returns markdown string
+2. **Tool** in `server.py` — `@mcp.tool()` async handler that calls API and returns `text(formatter(data))`
+
+```python
+@mcp.tool()
+async def search_markets(query: str, limit: int = 5, active_only: bool = True):
+    """Search Polymarket markets by title or description.
+    Returns matching markets with: current price, liquidity, volume,
+    end date, and active status."""
+    params = {"q": query, "limit_per_type": limit, "events_status": "active" if active_only else None}
+    data = await get(f"{gamma_url}/public-search", params=params)
+    return text(format_search_markets(data))
+```
+
+## Tool Docstrings
+
+- Become the agent-facing tool description — describe **what is returned**, not just parameters
+- Use multi-line docstrings for complex tools
+
+## Response Format
+
+- Formatters produce markdown (`#` / `##` headers, key-value lines)
+- Always return via `text()` — wraps markdown in JSON-encoded MCP `TextContent`
+- Errors: `err("message")` for API failures; plain strings for input validation
+
+## Multi-API Tools
+
+Use `asyncio.gather(..., return_exceptions=True)` and check each result:
+
+```python
+portfolio_data, rank_data = await asyncio.gather(portfolio_task, rank_task, return_exceptions=True)
+if isinstance(portfolio_data, Exception):
+    return err(str(portfolio_data))
+```
+
+## API Selection
+
+- Market discovery/details → `gamma_url`
+- User positions/portfolio/leaderboard → `data_url`

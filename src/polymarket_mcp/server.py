@@ -3,13 +3,13 @@ from typing import Literal
 
 from mcp.server.fastmcp import FastMCP
 
-from config import Settings
-from utils.helpers import err, get, text
-from utils.formatters import (
+from polymarket_mcp.config import Settings
+from polymarket_mcp.utils.helpers import err, get, text
+from polymarket_mcp.utils.formatters import (
     format_user_positions,
     format_search_markets,
     format_market_details,
-    format_user_performance
+    format_user_performance,
 )
 
 data_url = Settings().data_url
@@ -77,7 +77,7 @@ async def get_market_details(
     A 'market' is an individual Yes/No question inside an event.
     """
     if not slug and not market_link:
-        return "Error: provide a slug or market link"
+        return err("provide a slug or market link")
     
     if market_link:
         slug = market_link.rstrip("/").split("/")[-1]
@@ -129,5 +129,9 @@ async def get_user_performance(
     return text(format_user_performance(portfolio_data, rank_data))
 
 
-if __name__ == "__main__":
+def main() -> None:
     mcp.run(transport="streamable-http")
+
+
+if __name__ == "__main__":
+    main()

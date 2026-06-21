@@ -1,0 +1,29 @@
+---
+description: Polymarket MCP project context and architecture
+alwaysApply: true
+---
+
+# Polymarket MCP
+
+Python MCP server exposing Polymarket prediction market data to AI agents via read-only **Gamma** and **Data** APIs. No CLOB/trading integration.
+
+## Architecture Layers
+
+- `server.py` — MCP tool handlers (orchestration, param building, parallel requests)
+- `utils/helpers.py` — HTTP transport (`get`) and MCP wrappers (`text`, `err`)
+- `utils/formatters.py` — Pure functions: API JSON → markdown for agents
+- `config.py` — `Settings` (API URLs, timeout) via Pydantic
+
+## API Boundaries
+
+- **Gamma** (`gamma_url`): market search, market details by slug
+- **Data** (`data_url`): user positions, portfolio value, leaderboard
+
+## Key Constraints
+
+- Read-only; no order placement or wallet signing
+- Transport: `streamable-http` on port 8000
+- Python 3.12+, package manager is `uv` only
+- Flat imports (`from polymarket_mcp.config import Settings`) — package is installed via `uv sync`
+
+See `docs/PROJECT_KNOWLEDGE_BASE.md` for full onboarding reference.

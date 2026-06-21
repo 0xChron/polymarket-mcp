@@ -1,0 +1,38 @@
+---
+description: Development workflow, uv, Docker, and MCP testing
+globs: pyproject.toml,Makefile,Dockerfile,uv.lock
+alwaysApply: false
+---
+
+# Dev Workflow
+
+## Package Management
+
+- **Only `uv`** — never `pip install` directly
+- Add deps: `uv add <package>`
+- Run tools: `uv run --frozen <command>` (always pass `--frozen` to avoid rewriting `uv.lock`)
+- Sync env: `uv sync`
+
+## Common Commands
+
+```bash
+make run        # uv run --frozen polymarket-mcp
+make test       # uv run --frozen pytest
+make inspector  # npx @modelcontextprotocol/inspector
+make build      # docker build -t polymarket-mcp .
+make start      # docker run -p 8000:8000
+```
+
+## Docker
+
+- Package installed via `uv sync --frozen` in the image
+- Server entrypoint: `uv run --frozen polymarket-mcp`
+- Server listens on port 8000 (`streamable-http`)
+
+## Testing
+
+Run `make test`. Uses pytest with respx for HTTP mocking.
+
+## Dependencies
+
+Declare direct dependencies in `pyproject.toml` if imported in source (e.g. `httpx`, `pydantic-settings`), not only as transitive deps of `mcp`.
