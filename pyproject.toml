@@ -1,15 +1,20 @@
 [project]
-name = "polymarket-mcp"
+name = "0xchron-polymarket-mcp"
 version = "0.1.0"
-description = "Add your description here"
+description = "Read-only Polymarket prediction market data for AI agents (MCP server)."
 readme = "README.md"
 requires-python = ">=3.12"
+license = { text = "MIT" }
+authors = [{ name = "Aaron Canillas" }]
 dependencies = [
     "dotenv>=0.9.9",
     "httpx>=0.28.1",
     "mcp>=1.27.2",
     "pydantic-settings>=2.14.1",
 ]
+
+[project.urls]
+Repository = "https://github.com/0xChron/polymarket-mcp"
 
 [project.scripts]
 polymarket-mcp = "polymarket_mcp.server:main"

@@ -9,5 +9,4 @@ wheels/
 # Virtual environments
 .venv
 
-# Notes
-NOTES.md
+.cursor/
