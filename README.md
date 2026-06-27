@@ -19,35 +19,51 @@ All tools return markdown formatted for agent consumption. No API keys or wallet
 
 - Python 3.12+
 - [uv](https://docs.astral.sh/uv/) (recommended) or Docker
+- [Node.js](https://nodejs.org/) (optional, only for MCP Inspector)
 
 ## Quick start
 
-Clone the repo, install dependencies, and start the server:
+This server uses **streamable HTTP** at `http://127.0.0.1:8000/mcp`. Start the server first, then connect your MCP client to that URL.
 
 ```bash
 git clone https://github.com/0xChron/polymarket-mcp.git
 cd polymarket-mcp
 uv sync
-make run
+uv run polymarket-mcp
 ```
 
-The server listens on **streamable HTTP** at `http://127.0.0.1:8000/mcp`.
+On Windows, use the same commands in **PowerShell**, **Command Prompt**, or **Git Bash**. Leave the terminal open while your MCP client is connected.
 
-Verify it is running with the [MCP Inspector](https://github.com/modelcontextprotocol/inspector):
+### Docker
+
+Works the same on all platforms if Docker Desktop is installed:
 
 ```bash
-make inspector
+git clone https://github.com/0xChron/polymarket-mcp.git
+cd polymarket-mcp
+docker build -t polymarket-mcp .
+docker run --rm -p 8000:8000 -e FASTMCP_HOST=0.0.0.0 polymarket-mcp
 ```
 
-Connect the inspector to `http://localhost:8000/mcp` using the **Streamable HTTP** transport.
+`FASTMCP_HOST=0.0.0.0` lets the server accept connections from outside the container.
+
+### Verify the server
+
+Open [MCP Inspector](https://github.com/modelcontextprotocol/inspector) in another terminal:
+
+```bash
+npx -y @modelcontextprotocol/inspector
+```
+
+Connect to `http://localhost:8000/mcp` using the **Streamable HTTP** transport.
 
 ## Connect from an MCP client
 
-This server uses the **streamable-http** transport (not stdio). Start the server first, then point your client at the `/mcp` endpoint.
+This server uses the **streamable-http** transport (not stdio). **Start the server first** (see [Quick start](#quick-start)), then add the config below to your MCP client.
 
-### Cursor
+### Claude Desktop
 
-Add to `~/.cursor/mcp.json` (global) or `.cursor/mcp.json` (project-scoped):
+Go to **Claude → Settings → Developer → Edit Config** to open `claude_desktop_config.json`, then include the following:
 
 ```json
 {
@@ -59,11 +75,32 @@ Add to `~/.cursor/mcp.json` (global) or `.cursor/mcp.json` (project-scoped):
 }
 ```
 
-Restart Cursor (or reload the window) after saving. The server must be running before the client connects.
+If you already have other MCP servers configured, add the `"polymarket"` entry inside your existing `mcpServers` object instead of replacing the whole file.
 
-### Claude Desktop / other HTTP clients
+Config file location if you prefer to edit it manually:
 
-Any MCP client that supports streamable HTTP can connect to the same URL. Refer to your client's documentation for remote server configuration.
+| Platform | Path |
+|----------|------|
+| macOS | `~/Library/Application Support/Claude/claude_desktop_config.json` |
+| Windows | `%APPDATA%\Claude\claude_desktop_config.json` |
+
+Save the file and **fully quit and restart Claude Desktop**. The server must be running in a terminal before you start a new chat.
+
+### Cursor
+
+Go to **Settings → Tools & MCP → New MCP Server** to open `~/.cursor/mcp.json` (Windows: `%USERPROFILE%\.cursor\mcp.json`), then add the same `polymarket` entry:
+
+```json
+{
+  "mcpServers": {
+    "polymarket": {
+      "url": "http://localhost:8000/mcp"
+    }
+  }
+}
+```
+
+Restart Cursor after saving.
 
 ### Example agent prompts
 
@@ -74,20 +111,25 @@ Once connected, an agent can call tools naturally:
 - "Show open positions for wallet `0x…`"
 - "What is the all-time P&L and leaderboard rank for `0x…`?"
 
-## Docker
-
-Build and run the container:
-
-```bash
-make build
-docker run --rm -p 8000:8000 -e FASTMCP_HOST=0.0.0.0 polymarket-mcp
-```
-
-`FASTMCP_HOST=0.0.0.0` is required so the server accepts connections from outside the container. Then connect your MCP client to `http://localhost:8000/mcp`.
-
 ## Configuration
 
-Optional environment variables override API endpoints and server settings:
+Optional environment variables override API endpoints and server settings.
+
+**macOS / Linux / Git Bash**
+
+```bash
+export FASTMCP_HOST=0.0.0.0
+export FASTMCP_PORT=8000
+uv run polymarket-mcp
+```
+
+**Windows (PowerShell)**
+
+```powershell
+$env:FASTMCP_HOST = "0.0.0.0"
+$env:FASTMCP_PORT = "8000"
+uv run polymarket-mcp
+```
 
 | Variable | Default | Description |
 |----------|---------|-------------|
@@ -100,11 +142,13 @@ Optional environment variables override API endpoints and server settings:
 ## Development
 
 ```bash
-make run        # Start the server
-make test       # Run tests
-make inspector  # Open MCP Inspector
-make build      # Build Docker image
+uv run polymarket-mcp          # Start the server
+uv run pytest                  # Run tests
+npx -y @modelcontextprotocol/inspector   # Open MCP Inspector
+docker build -t polymarket-mcp .         # Build Docker image
 ```
+
+On macOS/Linux, `make run`, `make test`, and similar shortcuts in the [Makefile](Makefile) wrap the same commands.
 
 See [`docs/PROJECT_KNOWLEDGE_BASE.md`](docs/PROJECT_KNOWLEDGE_BASE.md) for architecture, conventions, and how to add new tools.
 
