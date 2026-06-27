@@ -19,3 +19,11 @@ def text(data: str) -> list[types.TextContent]:
  
 def err(msg: str) -> list[types.TextContent]:
     return [types.TextContent(type="text", text=f"Error: {msg}")]
+
+
+def parse_market_slug(slug: str | None = None, market_link: str | None = None) -> str | None:
+    if slug:
+        return slug
+    if market_link:
+        return market_link.rstrip("/").split("/")[-1]
+    return None

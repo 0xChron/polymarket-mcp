@@ -10,8 +10,11 @@ MCP server that exposes read-only Polymarket prediction market data to AI agents
 |------|-------------|
 | `search_markets` | Search markets by title or description |
 | `get_market_details` | Full details for a single market (by slug or Polymarket URL) |
+| `get_trending_markets` | Trending events ranked by volume, liquidity, or competitiveness |
+| `get_market_holders` | Top holders per outcome for a market (by condition ID, slug, or URL) |
+| `get_leaderboard` | Top traders ranked by P&L or volume |
 | `get_user_positions` | Open positions for a wallet address |
-| `get_user_performance` | Portfolio value, P&L, volume, and leaderboard rank |
+| `get_user_performance` | Portfolio value, P&L, volume, and leaderboard rank for one wallet |
 
 All tools return markdown formatted for agent consumption. No API keys or wallet signing are required.
 
@@ -107,6 +110,9 @@ Restart Cursor after saving.
 Once connected, an agent can call tools naturally:
 
 - "Search Polymarket for active markets about Bitcoin ETFs"
+- "What are the trending markets right now?"
+- "Who are the top holders of the Trump election market?"
+- "Show the all-time P&L leaderboard for crypto traders"
 - "Get details for https://polymarket.com/event/will-bitcoin-hit-100k"
 - "Show open positions for wallet `0x…`"
 - "What is the all-time P&L and leaderboard rank for `0x…`?"
