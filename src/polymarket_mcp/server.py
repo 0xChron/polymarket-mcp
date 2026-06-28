@@ -3,6 +3,7 @@ import json
 from typing import Literal
 
 from mcp.server.fastmcp import FastMCP
+from mcp.types import ToolAnnotations
 
 from polymarket_mcp.config import Settings
 from polymarket_mcp.utils.helpers import err, get, parse_market_slug, text
@@ -28,9 +29,40 @@ TimePeriod = Literal["DAY", "WEEK", "MONTH", "ALL"]
 LeaderboardOrderBy = Literal["PNL", "VOL"]
 TrendingOrderBy = Literal["volume24hr", "volume", "liquidity", "competitive"]
 
-mcp = FastMCP("polymarket-mcp")
+READ_ONLY_ANNOTATIONS = ToolAnnotations(
+    readOnlyHint=True,
+    destructiveHint=False,
+    idempotentHint=True,
+    openWorldHint=True,
+)
 
-@mcp.tool()
+SERVER_INSTRUCTIONS = """\
+Read-only Polymarket prediction market data (Gamma + Data APIs). This server cannot \
+place trades, sign transactions, or access private wallets.
+
+Vocabulary:
+- Event: a group of related markets (e.g. an election race).
+- Market: a single Yes/No question inside an event; identified by slug or URL.
+- conditionId: on-chain market identifier; use get_market_details to obtain it.
+- Wallet addresses are 0x-prefixed Polygon addresses.
+
+Tool chaining:
+1. search_markets or get_trending_markets to discover markets.
+2. get_market_details for full context (prices, volume, conditionId).
+3. get_market_holders for top holders per outcome.
+4. get_leaderboard for top traders; get_user_performance for one wallet.
+5. get_user_positions for a wallet's open positions.
+
+Category values: OVERALL, POLITICS, SPORTS, ESPORTS, CRYPTO, CULTURE, MENTIONS, \
+WEATHER, ECONOMICS, TECH, FINANCE. Time periods: DAY, WEEK, MONTH, ALL."""
+
+mcp = FastMCP(
+    "polymarket-mcp",
+    instructions=SERVER_INSTRUCTIONS,
+    website_url="https://github.com/0xChron/polymarket-mcp",
+)
+
+@mcp.tool(annotations=READ_ONLY_ANNOTATIONS)
 async def get_user_positions(
     user_address: str,
     limit: int = 10,
@@ -51,7 +83,7 @@ async def get_user_positions(
     data = await get(f"{data_url}/positions", params=params)
     return text(format_user_positions(data))
 
-@mcp.tool()
+@mcp.tool(annotations=READ_ONLY_ANNOTATIONS)
 async def search_markets(
     query: str,
     limit: int = 5,
@@ -72,7 +104,7 @@ async def search_markets(
     data = await get(f"{gamma_url}/public-search", params=params)
     return text(format_search_markets(data))
 
-@mcp.tool()
+@mcp.tool(annotations=READ_ONLY_ANNOTATIONS)
 async def get_market_details(
     slug: str | None = None,
     market_link: str | None = None
@@ -89,7 +121,7 @@ async def get_market_details(
     data = await get(f"{gamma_url}/markets/slug/{resolved_slug}")
     return text(format_market_details(data))
 
-@mcp.tool()
+@mcp.tool(annotations=READ_ONLY_ANNOTATIONS)
 async def get_user_performance(
     user_address: str,
     category: Category = "OVERALL",
@@ -132,7 +164,7 @@ async def get_user_performance(
 
     return text(format_user_performance(portfolio_data, rank_data))
 
-@mcp.tool()
+@mcp.tool(annotations=READ_ONLY_ANNOTATIONS)
 async def get_trending_markets(
     limit: int = 10,
     tag_slug: str | None = None,
@@ -159,7 +191,7 @@ async def get_trending_markets(
     data = await get(f"{gamma_url}/events", params=params)
     return text(format_trending_markets(data))
 
-@mcp.tool()
+@mcp.tool(annotations=READ_ONLY_ANNOTATIONS)
 async def get_leaderboard(
     category: Category = "OVERALL",
     time_period: TimePeriod = "ALL",
@@ -184,7 +216,7 @@ async def get_leaderboard(
     data = await get(f"{data_url}/v1/leaderboard", params=params)
     return text(format_leaderboard(data))
 
-@mcp.tool()
+@mcp.tool(annotations=READ_ONLY_ANNOTATIONS)
 async def get_market_holders(
     condition_id: str | None = None,
     slug: str | None = None,
