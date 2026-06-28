@@ -1,6 +1,6 @@
 ---
 description: Patterns for adding and modifying MCP tools
-globs: src/polymarket_mcp/server.py,src/polymarket_mcp/utils/formatters.py
+globs: src/polymarket_mcp/tools/**,src/polymarket_mcp/utils/formatters.py
 alwaysApply: false
 ---
 
@@ -9,10 +9,15 @@ alwaysApply: false
 ## Adding a Tool
 
 1. **Formatter** in `utils/formatters.py` — pure function, no I/O, returns markdown string
-2. **Tool** in `server.py` — `@mcp.tool()` async handler that calls API and returns `text(formatter(data))`
+2. **Tool** in `tools/markets.py` or `tools/users.py` — `@mcp.tool()` async handler that calls API and returns `text(formatter(data))`
 
 ```python
-@mcp.tool()
+from polymarket_mcp.config import READ_ONLY_ANNOTATIONS, gamma_url
+from polymarket_mcp.server import mcp
+from polymarket_mcp.utils.helpers import get, text
+from polymarket_mcp.utils.formatters import format_search_markets
+
+@mcp.tool(annotations=READ_ONLY_ANNOTATIONS)
 async def search_markets(query: str, limit: int = 5, active_only: bool = True):
     """Search Polymarket markets by title or description.
     Returns matching markets with: current price, liquidity, volume,
@@ -21,6 +26,8 @@ async def search_markets(query: str, limit: int = 5, active_only: bool = True):
     data = await get(f"{gamma_url}/public-search", params=params)
     return text(format_search_markets(data))
 ```
+
+New tool modules must be imported from `tools/__init__.py` so registration runs at startup.
 
 ## Tool Docstrings
 
@@ -45,5 +52,5 @@ if isinstance(portfolio_data, Exception):
 
 ## API Selection
 
-- Market discovery/details → `gamma_url`
-- User positions/portfolio/leaderboard → `data_url`
+- Market discovery/details → `gamma_url` (from `config.py`)
+- User positions/portfolio/leaderboard → `data_url` (from `config.py`)

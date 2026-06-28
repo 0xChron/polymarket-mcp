@@ -9,10 +9,12 @@ Python MCP server exposing Polymarket prediction market data to AI agents via re
 
 ## Architecture Layers
 
-- `server.py` — MCP tool handlers (orchestration, param building, parallel requests)
+- `server.py` — FastMCP instance, `main()`, registration imports
+- `tools/*.py` — MCP tool handlers (orchestration, param building, parallel requests)
+- `resources.py` / `prompts.py` — static resources and workflow prompts
+- `config.py` — `Settings`, annotations, instructions, and API URL constants
 - `utils/helpers.py` — HTTP transport (`get`) and MCP wrappers (`text`, `err`)
 - `utils/formatters.py` — Pure functions: API JSON → markdown for agents
-- `config.py` — `Settings` (API URLs, timeout) via Pydantic
 
 ## API Boundaries
 

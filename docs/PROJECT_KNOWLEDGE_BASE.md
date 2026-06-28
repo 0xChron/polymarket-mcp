@@ -20,10 +20,9 @@ Onboarding reference for engineers joining `polymarket-mcp`.
 ┌────────────────────────────▼────────────────────────────────┐
 │                      polymarket-mcp                          │
 │  ┌──────────────┐  ┌──────────────┐  ┌──────────────────────┐ │
-│  │  server.py   │→ │  helpers.py  │→ │  Polymarket APIs     │ │
-│  │ tools        │  │  (HTTP)      │  │  gamma + data        │ │
-│  │ resources    │  └──────────────┘  └──────────────────────┘ │
-│  │ prompts      │                                            │
+│  │  server.py   │→ │  tools/*.py  │→ │  helpers.py  │→ │  Polymarket APIs │
+│  │  resources   │  │              │  │  (HTTP)      │  │  gamma + data    │
+│  │  prompts     │  └──────────────┘  └──────────────┘  └──────────────────┘ │
 │  └──────┬───────┘                                            │
 │         │                                                    │
 │         ▼                                                    │
@@ -58,12 +57,18 @@ polymarket-mcp/
 ├── src/
 │   └── polymarket_mcp/          # Main Python package
 │       ├── __init__.py          # Package marker
-│       ├── server.py            # MCP server: tools, resources, prompts
-│       ├── config.py            # Pydantic settings (API URLs, timeout)
+│       ├── server.py            # FastMCP instance, main(), registration imports
+│       ├── config.py            # Settings, annotations, instructions, API URLs
+│       ├── types.py             # Literal types for tool parameters
+│       ├── resources.py         # MCP resource handlers
+│       ├── prompts.py           # MCP prompt handlers
 │       ├── content/             # Static markdown for MCP resources
 │       │   ├── glossary.md
 │       │   ├── categories.md
 │       │   └── tool-guide.md
+│       ├── tools/
+│       │   ├── markets.py       # Market discovery and holder tools
+│       │   └── users.py         # Positions, performance, leaderboard
 │       └── utils/
 │           ├── helpers.py       # HTTP client + MCP response wrappers
 │           └── formatters.py    # API JSON → markdown formatters
@@ -78,11 +83,13 @@ polymarket-mcp/
 
 | File | Role |
 |------|------|
-| `server.py` | Creates `FastMCP` instance; registers tools, resources, prompts; runs the server |
-| `content/` | Static markdown served as MCP resources (`polymarket://glossary`, etc.) |
-| `config.py` | `Settings` via `pydantic_settings.BaseSettings` — API URLs and timeout |
-| `utils/helpers.py` | Async `get()` via httpx; `text()` and `err()` for MCP responses |
-| `utils/formatters.py` | Pure functions: API dicts → markdown strings |
+| `server.py` | Creates `FastMCP` instance; imports modules to register handlers; runs the server |
+| `config.py` | `Settings`, `READ_ONLY_ANNOTATIONS`, `SERVER_INSTRUCTIONS`, `gamma_url`, `data_url` |
+| `types.py` | `Category`, `TimePeriod`, and other `Literal` parameter types |
+| `tools/markets.py` | Market discovery, details, trending, holders |
+| `tools/users.py` | User positions, performance, leaderboard |
+| `resources.py` | Static MCP resources backed by `content/*.md` |
+| `prompts.py` | User-triggered workflow prompts |
 
 ---
 
@@ -123,7 +130,7 @@ polymarket-mcp/
 ```
 Agent calls tool (e.g. search_markets)
     ↓
-server.py builds API params
+tools/*.py builds API params
     ↓
 helpers.get() → httpx GET → Polymarket API
     ↓
@@ -155,12 +162,12 @@ For `get_user_performance`, two API calls run in parallel via `asyncio.gather` b
 
 | Pattern | Where | Description |
 |---------|-------|-------------|
-| MCP Tool Handler | `server.py` | Async functions with `@mcp.tool()`; docstrings become agent-facing descriptions |
+| MCP Tool Handler | `tools/*.py` | Async functions with `@mcp.tool()`; docstrings become agent-facing descriptions |
 | Settings Object | `config.py` | Pydantic `BaseSettings` centralizes external service URLs |
 | Thin HTTP Gateway | `helpers.get()` | Single async GET wrapper; filters `None` params, raises on HTTP errors |
 | Formatter / Presenter | `formatters.py` | Separates API response shape from agent-facing output |
 | Parallel Fan-out | `get_user_performance` | `asyncio.gather(..., return_exceptions=True)` with per-call error handling |
-| Literal Types | `server.py` | `Category` and `TimePeriod` constrain MCP client option sets |
+| Literal Types | `types.py` | `Category` and `TimePeriod` constrain MCP client option sets |
 
 ---
 
@@ -197,10 +204,15 @@ Connect an MCP client to `http://localhost:8000` using the `streamable-http` tra
 ## Adding a New Tool
 
 1. Add a formatter in `utils/formatters.py` — pure function, API dict → markdown string.
-2. Add a tool in `server.py`:
+2. Add a tool in `tools/markets.py` or `tools/users.py` (or a new module imported from `tools/__init__.py`):
 
 ```python
-@mcp.tool()
+from polymarket_mcp.config import READ_ONLY_ANNOTATIONS, gamma_url
+from polymarket_mcp.server import mcp
+from polymarket_mcp.utils.helpers import get, text
+from polymarket_mcp.utils.formatters import format_my_new_tool
+
+@mcp.tool(annotations=READ_ONLY_ANNOTATIONS)
 async def my_new_tool(param: str, limit: int = 10):
     """Clear description for the agent."""
     data = await get(f"{gamma_url}/some-endpoint", params={"key": param})
@@ -263,19 +275,19 @@ def text(data: str) -> list[types.TextContent]:
 
 ```
 src/polymarket_mcp/
-├── server.py              # FastMCP init + tool registration only
+├── server.py              # FastMCP init + registration imports
+├── config.py              # Settings, annotations, instructions, API URLs
+├── types.py
+├── resources.py
+├── prompts.py
 ├── config.py
-├── clients/
-│   ├── gamma.py
-│   └── data.py
 ├── tools/
-│   ├── discovery.py
-│   ├── portfolio.py
-│   └── trading.py
-├── formatters/
-│   └── ...
+│   ├── markets.py
+│   ├── users.py
+│   └── clob.py            # Phase 2
 └── utils/
-    └── helpers.py
+    ├── helpers.py
+    └── formatters.py
 ```
 
 This aligns with the separation-of-concerns goal without changing the fundamental MCP adapter pattern.
