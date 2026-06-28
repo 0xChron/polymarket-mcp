@@ -6,7 +6,7 @@ Onboarding reference for engineers joining `polymarket-mcp`.
 
 **Polymarket MCP** is a Python MCP server that lets AI agents query Polymarket prediction market data through a standard tool-calling interface. It wraps Polymarket's public **Gamma** (market metadata) and **Data** (user/portfolio) APIs. It does not place trades or access the CLOB order book.
 
-**Maturity:** Early prototype. 4 of ~10 planned tools implemented. No test suite. Architecture is intentionally simple but separation of concerns will improve as the project grows.
+**Maturity:** Early prototype. 7 tools, 3 resources, and 3 prompts implemented. Test suite covers formatters, helpers, config, and server registration.
 
 ---
 
@@ -21,13 +21,15 @@ Onboarding reference for engineers joining `polymarket-mcp`.
 │                      polymarket-mcp                          │
 │  ┌──────────────┐  ┌──────────────┐  ┌──────────────────────┐ │
 │  │  server.py   │→ │  helpers.py  │→ │  Polymarket APIs     │ │
-│  │  (tools)     │  │  (HTTP)      │  │  gamma + data        │ │
-│  └──────┬───────┘  └──────────────┘  └──────────────────────┘ │
+│  │ tools        │  │  (HTTP)      │  │  gamma + data        │ │
+│  │ resources    │  └──────────────┘  └──────────────────────┘ │
+│  │ prompts      │                                            │
+│  └──────┬───────┘                                            │
 │         │                                                    │
 │         ▼                                                    │
-│  ┌──────────────┐                                            │
-│  │ formatters.py│  API JSON → markdown for agents            │
-│  └──────────────┘                                            │
+│  ┌──────────────┐     ┌──────────────┐                       │
+│  │ formatters.py│     │ content/*.md │  static resources     │
+│  └──────────────┘     └──────────────┘                       │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -56,8 +58,12 @@ polymarket-mcp/
 ├── src/
 │   └── polymarket_mcp/          # Main Python package
 │       ├── __init__.py          # Package marker
-│       ├── server.py            # MCP server entry point + tool definitions
+│       ├── server.py            # MCP server: tools, resources, prompts
 │       ├── config.py            # Pydantic settings (API URLs, timeout)
+│       ├── content/             # Static markdown for MCP resources
+│       │   ├── glossary.md
+│       │   ├── categories.md
+│       │   └── tool-guide.md
 │       └── utils/
 │           ├── helpers.py       # HTTP client + MCP response wrappers
 │           └── formatters.py    # API JSON → markdown formatters
@@ -72,7 +78,8 @@ polymarket-mcp/
 
 | File | Role |
 |------|------|
-| `server.py` | Creates `FastMCP` instance, registers `@mcp.tool()` handlers, runs the server |
+| `server.py` | Creates `FastMCP` instance; registers tools, resources, prompts; runs the server |
+| `content/` | Static markdown served as MCP resources (`polymarket://glossary`, etc.) |
 | `config.py` | `Settings` via `pydantic_settings.BaseSettings` — API URLs and timeout |
 | `utils/helpers.py` | Async `get()` via httpx; `text()` and `err()` for MCP responses |
 | `utils/formatters.py` | Pure functions: API dicts → markdown strings |
@@ -87,12 +94,27 @@ polymarket-mcp/
 | `search_markets` | Implemented | `gamma /public-search` |
 | `get_market_details` | Implemented | `gamma /markets/slug/{slug}` |
 | `get_user_performance` | Implemented | `data /value` + `data /v1/leaderboard` (parallel) |
-| `get_trending_markets` | Planned | — |
-| `get_market_history` | Planned | — |
-| `get_market_volume` | Planned | — |
-| `find_biggest_movers` | Planned | — |
-| `get_orderbook` | Planned | — |
-| `get_recent_trades` | Planned | — |
+| `get_trending_markets` | Implemented | `gamma /events` |
+| `get_leaderboard` | Implemented | `data /v1/leaderboard` |
+| `get_market_holders` | Implemented | `gamma /markets/slug/{slug}` + `data /holders` |
+| `get_orderbook` | Planned | CLOB |
+| `get_recent_trades` | Planned | CLOB |
+
+## Resources
+
+| URI | Source |
+|-----|--------|
+| `polymarket://glossary` | `content/glossary.md` |
+| `polymarket://categories` | `content/categories.md` |
+| `polymarket://tool-guide` | `content/tool-guide.md` |
+
+## Prompts
+
+| Prompt | Purpose |
+|--------|---------|
+| `research_market` | Details → holders → summary |
+| `compare_traders` | Compare two wallets |
+| `scan_trending` | Trending scan with optional tag filter |
 
 ---
 

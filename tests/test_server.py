@@ -1,5 +1,6 @@
 import pytest
 
+from polymarket_mcp.content import load as load_content
 from polymarket_mcp.server import (
     READ_ONLY_ANNOTATIONS,
     SERVER_INSTRUCTIONS,
@@ -14,6 +15,18 @@ EXPECTED_TOOLS = frozenset({
     "get_trending_markets",
     "get_leaderboard",
     "get_market_holders",
+})
+
+EXPECTED_RESOURCES = frozenset({
+    "polymarket://glossary",
+    "polymarket://categories",
+    "polymarket://tool-guide",
+})
+
+EXPECTED_PROMPTS = frozenset({
+    "research_market",
+    "compare_traders",
+    "scan_trending",
 })
 
 
@@ -49,3 +62,39 @@ def test_server_website_url_is_set() -> None:
 def test_read_only_annotations_constant() -> None:
     assert READ_ONLY_ANNOTATIONS.readOnlyHint is True
     assert READ_ONLY_ANNOTATIONS.destructiveHint is False
+
+
+@pytest.mark.asyncio
+async def test_list_resources_returns_all_three() -> None:
+    resources = await mcp.list_resources()
+    uris = {str(resource.uri) for resource in resources}
+    assert uris == EXPECTED_RESOURCES
+
+
+@pytest.mark.asyncio
+async def test_read_glossary_resource() -> None:
+    contents = await mcp.read_resource("polymarket://glossary")
+    assert len(contents) == 1
+    assert "# Polymarket Glossary" in contents[0].content
+    assert contents[0].mime_type == "text/markdown"
+
+
+@pytest.mark.asyncio
+async def test_list_prompts_returns_all_three() -> None:
+    prompts = await mcp.list_prompts()
+    names = {prompt.name for prompt in prompts}
+    assert names == EXPECTED_PROMPTS
+
+
+@pytest.mark.asyncio
+async def test_get_research_market_prompt() -> None:
+    result = await mcp.get_prompt("research_market", {"slug": "will-bitcoin-hit-100k"})
+    assert len(result.messages) == 1
+    assert result.messages[0].role == "user"
+    assert "will-bitcoin-hit-100k" in result.messages[0].content.text
+    assert "get_market_details" in result.messages[0].content.text
+
+
+def test_content_loader_reads_glossary() -> None:
+    text = load_content("glossary.md")
+    assert "conditionId" in text

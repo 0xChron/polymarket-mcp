@@ -18,6 +18,26 @@ MCP server that exposes read-only Polymarket prediction market data to AI agents
 
 All tools return markdown formatted for agent consumption. No API keys or wallet signing are required.
 
+## Resources
+
+Static reference context (no API calls). Attach in MCP clients or read via Inspector.
+
+| URI | Description |
+|-----|-------------|
+| `polymarket://glossary` | Event, market, slug, conditionId, and wallet terminology |
+| `polymarket://categories` | Leaderboard categories, time periods, and tag slugs |
+| `polymarket://tool-guide` | When to use each tool and chaining workflows |
+
+## Prompts
+
+User-triggered workflow templates that orchestrate tools:
+
+| Prompt | Description |
+|--------|-------------|
+| `research_market` | Market details → holders → research summary (`slug` or `market_link`) |
+| `compare_traders` | Side-by-side performance and positions for two wallets |
+| `scan_trending` | Trending events scan with optional `tag_slug` and `limit` |
+
 ## Requirements
 
 - Python 3.12+
@@ -116,6 +136,8 @@ Once connected, an agent can call tools naturally:
 - "Get details for https://polymarket.com/event/will-bitcoin-hit-100k"
 - "Show open positions for wallet `0x…`"
 - "What is the all-time P&L and leaderboard rank for `0x…`?"
+
+In MCP Inspector, try the **Prompts** tab (e.g. `research_market`) or read **Resources** for the glossary and tool guide.
 
 ## Configuration
 
