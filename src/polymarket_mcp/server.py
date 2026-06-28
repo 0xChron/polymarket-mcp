@@ -1,11 +1,16 @@
+import os
+
 from mcp.server.fastmcp import FastMCP
 
 from polymarket_mcp.config import READ_ONLY_ANNOTATIONS, SERVER_INSTRUCTIONS
+
 
 mcp = FastMCP(
     "polymarket-mcp",
     instructions=SERVER_INSTRUCTIONS,
     website_url="https://github.com/0xChron/polymarket-mcp",
+    host=os.environ.get("FASTMCP_HOST", "127.0.0.1"),
+    port=int(os.environ.get("FASTMCP_PORT", "8000")),
 )
 
 # Register resources, prompts, and tools (import for side effects).
